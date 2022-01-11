@@ -4,17 +4,36 @@ import sqlite3 as sl
 con = sl.connect('tracker.db')
 
 with con:
-    sql = """
-            SELECT timestamp FROM abfahrten
-    """
-    cur = con.cursor()
-    cur.execute(sql)
-    time = cur.fetchall()
-
-    for t in time:
-        t2 = t[0] - 60*70
         sql = """
-                UPDATE abfahrten SET timestamp = ?, time = ? WHERE timestamp = ?
+                CREATE TABLE departures(
+                        id INTEGER PRIMARY KEY,
+                        station TEXT,
+                        label TEXT,
+                        destination TEXT,
+                        timestamp TIMESTAMP,
+                        time DATETIME,
+                        delay TINYINT,
+                        cancelled BOOL
+                )"""
+        con.execute(sql)
+        sql = """
+                CREATE TABLE routes(
+                        id INTEGER PRIMARY KEY,
+                        station TEXT,
+                        destination TEXT,
+                        label TEXT
+                )"""
+        con.execute(sql)
+        sql = """
+                CREATE TABLE delays(
+                        id INTEGER PRIMARY KEY,
+                        route_id TINYINT NOT NULL,
+                        timestamp TIMESTAMP,
+                        time DATETIME,
+                        delay SMALLINT,
+                        cancelled TINYINT,
+                        FOREIGN KEY(route_id)
+                                REFERENCES routes (id)
+                )
         """
-        variables = (t2, datetime.fromtimestamp(t[0]),t[0])
-        cur.execute(sql, variables)
+        con.execute(sql)

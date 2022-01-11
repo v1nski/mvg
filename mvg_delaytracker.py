@@ -11,7 +11,7 @@ def update(station, station_id):
     con = sl.connect('tracker.db')
     with con:
         sql = """
-            SELECT MAX(timestamp) FROM abfahrten WHERE station = ?
+            SELECT MAX(timestamp) FROM departures WHERE station = ?
         """
         cur = con.cursor()
         entry = (station,)
@@ -32,7 +32,7 @@ def update(station, station_id):
 
             with con:
                 sql = """
-                    INSERT INTO abfahrten (station, label, destination, timestamp, time, delay, cancelled)
+                    INSERT INTO departures (station, label, destination, timestamp, time, delay, cancelled)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """
                 cur = con.cursor()
@@ -49,7 +49,7 @@ def update(station, station_id):
             cancelled = departure["cancelled"]
             with con:
                 sql = """
-                    UPDATE abfahrten
+                    UPDATE departures
                     SET delay = ?, cancelled = ?
                     WHERE timestamp = ? AND station = ?
                 """
@@ -71,7 +71,7 @@ def find_new_routes():
         old_routes = cur.fetchall()
 
         sql = """
-            SELECT station, destination, label FROM abfahrten ORDER BY id DESC LIMIT 200
+            SELECT station, destination, label FROM departures ORDER BY id DESC LIMIT 200
         """
         cur.execute(sql)
         results = cur.fetchall()
@@ -112,7 +112,7 @@ def get_average_delay(dep, dest, start_time, dt):
     con = sl.connect('tracker.db')
     with con:
         sql = """
-            SELECT delay, cancelled FROM abfahrten WHERE station = ? AND destination = ? AND timestamp < ? AND timestamp > ?
+            SELECT delay, cancelled FROM departures WHERE station = ? AND destination = ? AND timestamp < ? AND timestamp > ?
         """
         variables = (dep, dest, max_tm, min_tm)
         cur = con.cursor()
@@ -144,7 +144,7 @@ def process_delays():
     with con:
         # I:    get first timestamp
         sql = """
-            SELECT MIN(timestamp) FROM abfahrten LIMIT 1
+            SELECT MIN(timestamp) FROM departures LIMIT 1
         """
         cur = con.cursor()
         cur.execute(sql)
@@ -190,7 +190,7 @@ def process_delays():
 
         # V:    delete rows from departure-table
         sql = """
-            DELETE FROM abfahrten WHERE timestamp >= ? AND timestamp <= ?
+            DELETE FROM departure WHERE timestamp >= ? AND timestamp <= ?
         """
         variables = (timestamp, timestamp + dt)
         cur.execute(sql, variables)
