@@ -32,6 +32,7 @@ with con:
                         time DATETIME,
                         delay SMALLINT,
                         cancelled TINYINT,
+                        n_trains SMALLINT,
                         FOREIGN KEY(route_id)
                                 REFERENCES routes (id)
                 )

@@ -3,12 +3,13 @@ import sqlite3 as sl
 import datetime
 import json
 
+db_name = "tracker.db"
 
 def update(station, station_id):
     departures = mvg.get_departures(station_id)
 
     result = 0
-    con = sl.connect('tracker.db')
+    con = sl.connect(db_name)
     with con:
         sql = """
             SELECT MAX(timestamp) FROM departures WHERE station = ?
@@ -20,6 +21,7 @@ def update(station, station_id):
         for z in x:
             if z != None:
                 result += z
+    
 
     for departure in departures:
         if departure["product"]=="UBAHN" and not int(departure["departureTime"]/1000) <= result:
@@ -39,6 +41,7 @@ def update(station, station_id):
                 entry = (station, label, destination, timestamp, time, delay, cancelled)
                 cur.execute(sql, entry)
                 con.commit()
+            
         else:
             timestamp = departure["departureTime"]/1000
             try:
@@ -57,11 +60,12 @@ def update(station, station_id):
                 entry = (delay, cancelled, timestamp, station)
                 cur.execute(sql, entry)
                 con.commit()
+    con.close()
 
 
 def find_new_routes():
     routes = []
-    con = sl.connect('tracker.db')
+    con = sl.connect(db_name)
     with con:
         sql = """
             SELECT station, destination, label FROM routes
@@ -88,13 +92,13 @@ def find_new_routes():
                     break
             if not known:
                 routes.append(new_route)
-
-        return routes
+    con.close()
+    return routes
 
 
 def update_routes():
     new_routes = find_new_routes()
-    con = sl.connect('tracker.db')
+    con = sl.connect(db_name)
     with con:
         sql = """
             INSERT INTO routes (station, destination, label) VALUES (?, ?, ?)
@@ -103,13 +107,14 @@ def update_routes():
 
         for route in new_routes:
             cur.execute(sql, route)
+    con.close()
 
 
 def get_average_delay(dep, dest, start_time, dt):
     min_tm = start_time
     max_tm = start_time + dt # T -1hr
 
-    con = sl.connect('tracker.db')
+    con = sl.connect(db_name)
     with con:
         sql = """
             SELECT delay, cancelled FROM departures WHERE station = ? AND destination = ? AND timestamp < ? AND timestamp > ?
@@ -127,7 +132,8 @@ def get_average_delay(dep, dest, start_time, dt):
             n_canc += res[1]
         if n_res > 0:
             av_delay /= n_res
-        return (av_delay, n_canc, n_res)
+    con.close()
+    return (av_delay, n_canc, n_res)
 
 
 def process_delays():   
@@ -140,7 +146,7 @@ def process_delays():
 
     dt = 60*60
 
-    con = sl.connect('tracker.db')
+    con = sl.connect(db_name)
     with con:
         # I:    get first timestamp
         sql = """
@@ -151,6 +157,7 @@ def process_delays():
         (timestamp,) = cur.fetchone()
         if timestamp == None:
             print("ERROR: There are no departures to be processed")
+            
             return False
 
         # II:    check overlap
@@ -161,11 +168,13 @@ def process_delays():
         (last_tm,) = cur.fetchone()
         if not last_tm == None and timestamp < last_tm:
                 print("ERROR: There already exist later delays")
+                
                 return False
         elif timestamp + dt> datetime.datetime.timestamp(datetime.datetime.now()):
             print(timestamp)
             print(datetime.datetime.timestamp(datetime.datetime.now()) - 60*60)
             print("ERROR: Cannot set future departures")
+            
             return False
 
         # II:   get all routes
@@ -190,11 +199,11 @@ def process_delays():
 
         # V:    delete rows from departure-table
         sql = """
-            DELETE FROM departure WHERE timestamp >= ? AND timestamp <= ?
+            DELETE FROM departures WHERE timestamp >= ? AND timestamp <= ?
         """
         variables = (timestamp, timestamp + dt)
         cur.execute(sql, variables)
-
+    con.close()
     return True
 
 
