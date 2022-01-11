@@ -15,37 +15,50 @@ route = mvg.get_route(id_dep, id_arr, bus=False, tram=False, sbahn=False)
 file = open("out.txt","w")
 
 cntr = 0
+min_t_span = -1
 for line in route:
     conn = line["connectionPartList"]
 
-    t_start = datetime.datetime.fromtimestamp(line["departure"]/1000)
-    t_end = datetime.datetime.fromtimestamp(line["arrival"]/1000)
     t_span = (line["arrival"] - line["departure"])/1000/60
-    timespan = "Timespan: " + str(t_start) + " => " + str(t_end) + "   |   " + str(t_span) + " minutes\n"
+
+    if min_t_span == -1 or min_t_span > t_span:
+        min_t_span = t_span
+
+
+
+for line in route:
+
+    t_span = (line["arrival"] - line["departure"])/1000/60
+
+    if t_span < min_t_span + 5:
+        t_start = datetime.datetime.fromtimestamp(line["departure"]/1000)
+        t_end = datetime.datetime.fromtimestamp(line["arrival"]/1000)
+
+        timespan = "Timespan: " + str(t_start) + " => " + str(t_end) + "   |   " + str(t_span) + " minutes\n"
     
-    file.write(timespan)
-    file.write(dep_name)
+        file.write(timespan)
+        file.write(dep_name)
 
-    for s_conn in conn:
-        stops = s_conn["stops"]
+        for s_conn in conn:
+            stops = s_conn["stops"]
 
-        for s_stop in stops:
-            print(s_stop["location"]["name"])
-            t = s_stop["time"]/1000
-            t2 = str(datetime.datetime.fromtimestamp(t))
+            for s_stop in stops:
+                print(s_stop["location"]["name"])
+                t = s_stop["time"]/1000
+                t2 = str(datetime.datetime.fromtimestamp(t))
 
-            file.write("  ->  " + s_stop["location"]["name"] + " at " + t2)
-            
-        file.write("  ->  " + s_conn["to"]["name"] + "\n")
+                file.write("  ->  " + s_stop["location"]["name"] + " at " + t2)
+                
+            file.write("  ->  " + s_conn["to"]["name"] + "\n")
 
-    #file.write(f"  ->  {arr_name}\n\n------------------------\n\n") 
+        #file.write(f"  ->  {arr_name}\n\n------------------------\n\n") 
 
 
 
-    file.write("\n\n----------------\n\n")
-    cntr += 1
-    if cntr > 3:
-        break
+        file.write("\n\n----------------\n\n")
+        cntr += 1
+        if cntr > 3:
+            break
 file.close()
 
 
