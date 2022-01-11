@@ -17,6 +17,13 @@ file = open("out.txt","w")
 cntr = 0
 for line in route:
     conn = line["connectionPartList"]
+
+    t_start = datetime.datetime.fromtimestamp(line["departure"]/1000)
+    t_end = datetime.datetime.fromtimestamp(line["arrival"]/1000)
+    t_span = (line["arrival"] - line["departure"])/1000/60
+    timespan = "Timespan: " + str(t_start) + " => " + str(t_end) + "   |   " + str(t_span) + " minutes\n"
+    
+    file.write(timespan)
     file.write(dep_name)
 
     for s_conn in conn:
